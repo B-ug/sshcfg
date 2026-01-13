@@ -1,10 +1,17 @@
 # sshcfg
 
-一个用于**交互式安全配置 OpenSSH Server** 的小工具：通过安装脚本生成并安装命令 `ssh-config`，帮助你一键完成公钥登录配置、（可选）禁用密码登录、（可选）禁止/允许 root 登录，并在应用前后做备份与语法校验，最后自动重启 SSH 服务。
+一个用于**交互式安全配置 OpenSSH Server** 的小工具：通过安装脚本生成并安装命令 `ssh-config`，支持你**按需单独**完成以下配置：
+
+- 是否允许 root 登录（`PermitRootLogin`）
+- 是否禁用密码登录（`PasswordAuthentication`）
+- 为指定用户添加 SSH 公钥（`authorized_keys`）
+
+并在需要修改 `sshd_config` 时做备份与语法校验，最后自动重启 SSH 服务。
 
 ## 功能
 
-- **交互式向导**：引导你选择是否允许 root 登录、是否禁用密码登录、为哪个用户写入公钥。
+- **交互式向导**：三项能力都可以**独立选择或跳过**（默认行为与旧版一致：仍会提示你配置这三项）。
+- **支持命令行参数**：可非交互地单独设置 root 登录 / 密码登录 / 添加公钥。
 - **多种公钥来源**：
   - 直接粘贴公钥
   - 输入 URL（脚本会抓取第一行作为公钥）
@@ -40,19 +47,22 @@ wget -O install.sh "https://raw.githubusercontent.com/B-ug/sshcfg/refs/heads/mai
 
 ## 使用
 
-运行交互式向导（必须 root）：
+运行菜单式向导（必须 root）：
 
 ```bash
 ssh-config
 ```
 
-向导大致流程：
+你会先看到一个编号菜单，按需选择你要做的事情：
 
-- 选择是否允许 root 登录
-- 选择是否禁用密码登录（仅密钥登录）
-- 提供公钥（粘贴 / URL / `github:xxx` / `gitlab:xxx`）
-- 选择写入公钥的目标用户（root / 当前登录用户 / 指定用户）
-- 应用配置 → 语法校验 → 重启 SSH 服务 → 检查服务状态
+- 1) root 登录设置（`PermitRootLogin`）
+- 2) 密码登录设置（`PasswordAuthentication`）
+- 3) 添加公钥（写入 `authorized_keys`）
+- 4) 应用以上选择并重启 SSH（如需要）
+- 5) 清空所有选择
+- 0) 退出
+
+你可以只选其中一项（例如只做 root 登录设置），也可以多选后再统一“应用”。
 
 ## 备份与日志
 
@@ -62,12 +72,12 @@ ssh-config
 
 ## 会修改哪些 SSH 配置
 
-脚本会在 `/etc/ssh/sshd_config` 中设置/更新（若已存在会替换，包含被注释的条目）：
+脚本会在 `/etc/ssh/sshd_config` 中**按需**设置/更新（若已存在会替换，包含被注释的条目）：
 
 - `PubkeyAuthentication yes`
 - `AuthorizedKeysFile .ssh/authorized_keys`
-- `PermitRootLogin yes|no`（由交互选择决定）
-- `PasswordAuthentication yes|no`（由交互选择决定）
+- `PermitRootLogin yes|no|prohibit-password`（由交互/参数决定）
+- `PasswordAuthentication yes|no`（由交互/参数决定）
 
 并为目标用户写入公钥到：
 
